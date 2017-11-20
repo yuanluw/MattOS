@@ -41,3 +41,6 @@
 ..\obj\bsp_key.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 ..\obj\bsp_key.o: ..\BSP\bspMalloc.h
 ..\obj\bsp_key.o: ..\os\MattOS.h
+..\obj\bsp_key.o: ..\os\list.h
+..\obj\bsp_key.o: ..\os\MattOS.h
+..\obj\bsp_key.o: ..\os\port.h

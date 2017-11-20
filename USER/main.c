@@ -17,77 +17,62 @@ void task1(void *para)
 {
     while(1)
     {
-        printf("%d",1);
-
+        ledControl();
+        
+        taskDelay(100);
     }
 }
 
 void task2(void *para)
 {
+     uint32_t s = 0;
     while(1)
     {
-       ledControl();
-
+        s = taskEnterCritical();
+        printf("%s","task2\r\n");
+        taskExitCritical(s);
+        taskDelay(100);
     }
 }
 
-void _idleTask(void *para)
+
+void task3(void *para)
 {
+    uint32_t s = 0;
     while(1)
     {
-        
+        s = taskEnterCritical();
+        printf("%s\r\n","task3");
+        taskExitCritical(s);
+
+        taskDelay(100);  
     }
 }
 
-tTaskHandler_t tTask1;
-tTaskHandler_t tTask2;
-tTaskHandler_t tTaskIdle;
-tTaskStack task1Stack[1024];
-tTaskStack task2Stack[1024];
-tTaskStack idleStack[1024];
-tTaskHandler_t * taskTable[2];
-tTaskHandler_t *idleTask;
 
 
-
-
-
-
-
-
-
-/**
- * @brief  基础外设初始化 
- * @param  无
- * @retval 无
- */
-static void Bsp_Init(void)
-{
-	
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
-	delayInit(168);
-	ledInit();
-	keyInit();
-    uartInit(115200);
- 
-    
-    taskTable[0] = &tTask1;
-    taskTable[1] = &tTask2;
-    idleTask = &tTaskIdle;
-    
-    
-    tTaskRun();
-    
-    
-}
-
+taskHandler_t tTask1;
+taskHandler_t tTask2;
+taskHandler_t tTask3;
+taskHandler_t tTask4;
 
 
 
 int main()
 {
    
-    Bsp_Init();
+    
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+	delayInit(168);
+	ledInit();
+	keyInit();
+    uartInit(115200);
+    
+    createTask(&tTask1,task1,NULL,200,3);
+    createTask(&tTask2,task2,NULL,200,3);
+    createTask(&tTask3,task3,NULL,200,3);
+
+    startTaskSched();
 
    
     return 0;

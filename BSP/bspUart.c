@@ -96,7 +96,7 @@ void uartInit(uint32_t bound)
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			
     NVIC_Init(&NVIC_InitStructure);	
 
-    uartDmaConfig();
+    
     printf("%s","test\r\n");
 }
 

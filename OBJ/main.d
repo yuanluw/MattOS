@@ -45,3 +45,7 @@
 ..\obj\main.o: ..\BSP\bsp_ui.h
 ..\obj\main.o: ..\BSP\bspUart.h
 ..\obj\main.o: ..\os\port.h
+..\obj\main.o: ..\os\MattOS.h
+..\obj\main.o: ..\os\list.h
+..\obj\main.o: ..\os\MattOS.h
+..\obj\main.o: ..\os\port.h

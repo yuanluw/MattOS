@@ -1,10 +1,10 @@
-#include "list.h"
+#include "MattOS.h"
 #include "bspMalloc.h"
 
 
 //就绪列表
-LIST_TypeDef  taskReadyLists[MAX_PRIORITIES]; 
-
+ LIST_TypeDef  taskReadyLists[MAX_PRIORITIES]; 
+ LIST_TypeDef  taskDelayLists;
 
 
 /**
@@ -16,7 +16,6 @@ void nodeInit(tNode *node)
 {
     node->nextNode = node;
     node->preNode = node;
-    node->owner = NULL;
 }
 
 
@@ -72,11 +71,13 @@ void listAddFirst(LIST_TypeDef* list,tNode *node)
  */
 void listAddLast(LIST_TypeDef* list,tNode *node)
 {
-    node->nextNode = &(list->headNode);
     node->preNode = list->headNode.preNode;
+    node->nextNode = &(list->headNode);
     
-    list->headNode.preNode = node;
+    
     list->headNode.preNode->nextNode = node;
+    list->headNode.preNode = node;
+    
     
     list->nodeCount++;
 }
@@ -134,27 +135,19 @@ void listRemoveAll(LIST_TypeDef *list)
  * @param  none
  * @retval none
  */
-uint8_t addTaskToReadyList(tTaskHandler_t *task)
+uint8_t addTaskToReadyList(tNode *node)
 {
    
-    tNode *newNode = myMalloc(sizeof(tNode));
-    
-    if(newNode == NULL)
-    {
-        return False;
-    }
-    
-    nodeInit(newNode);
-    
-    newNode->owner = task;
+    taskHandler_t *task = (taskHandler_t*)((uint32_t)node - (uint32_t)(sizeof(taskHandler_t)-sizeof(tNode)));
     
     if(taskReadyLists[task->prio].nodeCount == 0)
     {
         listInit(&taskReadyLists[task->prio]);
     }
     
-    listAddLast(&taskReadyLists[task->prio],newNode);
-
+    listAddLast(&(taskReadyLists[task->prio]),node);
+    
+    return True;
 }
 
 
@@ -164,30 +157,29 @@ uint8_t addTaskToReadyList(tTaskHandler_t *task)
  * @param  none
  * @retval none
  */
-uint8_t removeTaskToReadyList(tTaskHandler_t *task)
+uint8_t removeTaskToReadyList(tNode *node)
 {
     uint8_t i;
+    taskHandler_t *task = (taskHandler_t*)((uint32_t)node - (uint32_t)(sizeof(taskHandler_t)-sizeof(tNode)));
     uint8_t position = task->prio;
-    tNode *node;
+    tNode *iterator;
     if(taskReadyLists[position].nodeCount == 0)
     {
         return False;
     }
     
-    node = taskReadyLists[position].headNode.nextNode;
+    iterator = taskReadyLists[position].headNode.nextNode;
     for(i=taskReadyLists[position].nodeCount; i!=0 ; i--)
     {
-        if(node->owner == task)
+        if(iterator == node)
         {
             //从列表中移除
             listRemove(&taskReadyLists[position],node);
-            //回收内存
-            myFree(node);
             
             break;
         }
         
-        node = node->nextNode;
+        iterator = iterator->nextNode;
         
     }
     
@@ -207,41 +199,107 @@ uint8_t removeTaskToReadyList(tTaskHandler_t *task)
  * @param  none
  * @retval none
  */
-tTaskHandler_t* getHighReadyTask(void)
+taskHandler_t* getHighReadyTask(void)
 {
     uint8_t i=0 ;
     uint8_t j;
+    taskHandler_t *task;// = (taskHandler_t*)(node - (sizeof(taskHandler_t)-sizeof(tNode)));
     tNode *node;
-    for(i=MAX_PRIORITIES; i!=0 ; i--)
+    for(i=0; i<MAX_PRIORITIES ; i++)
     {
-        if(taskReadyLists[i-1].nodeCount == 0)
+        if(taskReadyLists[i].nodeCount == 0)
         {
             continue;
         }
         
-        if(taskReadyLists[i-1].nodeCount == 1)
+        if(taskReadyLists[i].nodeCount == 1)
         {
-            return taskReadyLists[i-1].headNode.nextNode->owner;
+            node = taskReadyLists[i].headNode.nextNode;
+            task = (taskHandler_t*)((uint32_t)node - (uint32_t)(sizeof(taskHandler_t)-sizeof(tNode)));
+            return task;
         }
         
-        if(taskReadyLists[i-1].nodeCount>=2)
+        if(taskReadyLists[i].nodeCount>=2)
         {
             
-            node = taskReadyLists[i-1].headNode.nextNode;
-            for(j=0; j<taskReadyLists[i-1].index; j++)
+            node = taskReadyLists[i].headNode.nextNode;
+            for(j=0; j<taskReadyLists[i].index; j++)
             {
                 node = node->nextNode;
             }  
             
-            taskReadyLists[i-1].index++;
-            taskReadyLists[i-1].index%=taskReadyLists[i-1].nodeCount;
+            taskReadyLists[i].index++;
+            taskReadyLists[i].index%=taskReadyLists[i].nodeCount;
             
-            return node->owner;
+            task = (taskHandler_t*)((uint32_t)node - (uint32_t)(sizeof(taskHandler_t)-sizeof(tNode)));
+            return task;
         }
         
-    }    
+    }  
+
+    return NULL;
 }
 
+
+/**
+ * @brief  添加任务延时列表
+ * @param  none
+ * @retval none
+ */
+uint8_t addTaskToDelayList(tNode *node)
+{
+    
+    
+    if(taskDelayLists.nodeCount == 0)
+    {
+        listInit(&taskDelayLists);
+    }
+    
+    listAddLast(&taskDelayLists,node);
+   
+    
+    return True;
+}
+
+
+
+/**
+ * @brief  从延时列表中移除任务
+ * @param  none
+ * @retval none
+ */
+uint8_t removeTaskToDelayList(tNode *node)
+{
+    
+    uint8_t i;
+    tNode *iterator;
+    if(taskDelayLists.nodeCount == 0)
+    {
+        return False;
+    }
+    
+    iterator = taskDelayLists.headNode.nextNode;
+    for(i=taskDelayLists.nodeCount; i!=0 ; i--)
+    {
+        if(iterator == node)
+        {
+            //从列表中移除
+            listRemove(&taskDelayLists,node);
+            break;
+        }
+        
+        iterator = iterator->nextNode;
+        
+    }
+    
+    if(i != 0)
+    {
+        return True;
+    }
+    
+    return False;
+    
+}
 
 
 /**********************(C)  COPYRIGHT 2017 吴远泸 *********************************************************/

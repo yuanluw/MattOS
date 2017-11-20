@@ -2,6 +2,9 @@
 ..\obj\delay.o: ..\BSP\bspMalloc.h
 ..\obj\delay.o: ..\os\MattOS.h
 ..\obj\delay.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+..\obj\delay.o: ..\os\list.h
+..\obj\delay.o: ..\os\MattOS.h
+..\obj\delay.o: ..\os\port.h
 ..\obj\delay.o: ..\SYSTEM\delay\delay.h
 ..\obj\delay.o: ..\SYSTEM\sys\sys.h
 ..\obj\delay.o: ..\USER\stm32f4xx.h

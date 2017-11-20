@@ -41,3 +41,7 @@
 ..\obj\bsp_interrupt.o: ..\SYSTEM\delay\delay.h
 ..\obj\bsp_interrupt.o: ..\SYSTEM\sys\sys.h
 ..\obj\bsp_interrupt.o: ..\os\port.h
+..\obj\bsp_interrupt.o: ..\os\MattOS.h
+..\obj\bsp_interrupt.o: ..\os\list.h
+..\obj\bsp_interrupt.o: ..\os\MattOS.h
+..\obj\bsp_interrupt.o: ..\os\port.h

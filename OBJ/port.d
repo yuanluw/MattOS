@@ -34,7 +34,8 @@
 ..\obj\port.o: ..\FWLIB\inc\stm32f4xx_dac.h
 ..\obj\port.o: ..\FWLIB\inc\stm32f4xx_dcmi.h
 ..\obj\port.o: ..\FWLIB\inc\stm32f4xx_fsmc.h
-..\obj\port.o: ..\OS\port.h
 ..\obj\port.o: ..\OS\MattOS.h
-..\obj\port.o: ..\BSP\bspMalloc.h
 ..\obj\port.o: ..\OS\list.h
+..\obj\port.o: ..\OS\MattOS.h
+..\obj\port.o: ..\OS\port.h
+..\obj\port.o: ..\BSP\bspMalloc.h

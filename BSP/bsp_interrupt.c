@@ -73,17 +73,6 @@ void USART1_IRQHandler(void)
 }
 
 
-extern void tTaskTickDECHandler(void);
-/**
- * @brief  滴答计时器中断 
- * @param  无
- * @retval 无
- */
-void SysTick_Handler(void)
-{
-	//systickISR();
-   // tTaskTickDECHandler();
-}
 
 
 
