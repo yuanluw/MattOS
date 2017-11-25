@@ -5,7 +5,7 @@
 //就绪列表
  LIST_TypeDef  taskReadyLists[MAX_PRIORITIES]; 
  LIST_TypeDef  taskDelayLists;
-
+LIST_TypeDef   taskSuspendLists;
 
 /**
  * @brief  结点初始化
@@ -133,7 +133,7 @@ void listRemoveAll(LIST_TypeDef *list)
 /**
  * @brief  添加任务至就绪列表
  * @param  none
- * @retval none
+ * @retval True or False
  */
 uint8_t addTaskToReadyList(tNode *node)
 {
@@ -155,7 +155,7 @@ uint8_t addTaskToReadyList(tNode *node)
 /**
  * @brief  从就绪列表中移除任务
  * @param  none
- * @retval none
+ * @retval True or False
  */
 uint8_t removeTaskToReadyList(tNode *node)
 {
@@ -197,7 +197,7 @@ uint8_t removeTaskToReadyList(tNode *node)
 /**
  * @brief  从就绪列表中获取最高优先级任务
  * @param  none
- * @retval none
+ * @retval 任务句柄
  */
 taskHandler_t* getHighReadyTask(void)
 {
@@ -244,7 +244,7 @@ taskHandler_t* getHighReadyTask(void)
 /**
  * @brief  添加任务延时列表
  * @param  none
- * @retval none
+ * @retval True or False
  */
 uint8_t addTaskToDelayList(tNode *node)
 {
@@ -266,7 +266,7 @@ uint8_t addTaskToDelayList(tNode *node)
 /**
  * @brief  从延时列表中移除任务
  * @param  none
- * @retval none
+ * @retval True or False
  */
 uint8_t removeTaskToDelayList(tNode *node)
 {
@@ -299,6 +299,64 @@ uint8_t removeTaskToDelayList(tNode *node)
     
     return False;
     
+}
+
+
+/**
+ * @brief  从挂起列表中添加任务
+ * @param  none
+ * @retval True or False
+ */
+uint8_t addTaskToSuspendList(tNode *node)
+{
+    if(taskSuspendLists.nodeCount == 0)
+    {
+        
+        listInit(&taskSuspendLists);
+    }
+    
+    
+    listAddLast(&taskSuspendLists,node);
+    
+    return True;
+}
+
+
+
+/**
+ * @brief  从挂起列表中移除任务
+ * @param  none
+ * @retval True or False
+ */
+uint8_t removeTaskToSuspendList(tNode *node)
+{
+    uint8_t i;
+    tNode *iterator;
+    if(taskSuspendLists.nodeCount == 0)
+    {
+        return False;
+    }
+    
+    iterator = taskSuspendLists.headNode.nextNode;
+    for(i=taskSuspendLists.nodeCount; i!=0 ; i--)
+    {
+        if(iterator == node)
+        {
+            //从列表中移除
+            listRemove(&taskSuspendLists,node);
+            break;
+        }
+        
+        iterator = iterator->nextNode;
+        
+    }
+    
+    if(i != 0)
+    {
+        return True;
+    }
+    
+    return False; 
 }
 
 

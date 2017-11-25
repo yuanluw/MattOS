@@ -6,8 +6,10 @@
 
 typedef enum
 {
+    NONE_STATE,
     READY_STATE,
     RUN_STATE,
+    DELAY_STATE,
     SUSPEND_STATE
 }TASKSTATE_ENUM;
 
@@ -62,6 +64,8 @@ void taskReadyListInit(void);
 uint8_t addTaskToDelayList(tNode *node);
 uint8_t removeTaskToDelayList(tNode *node);
 
+uint8_t addTaskToSuspendList(tNode *node);
+uint8_t removeTaskToSuspendList(tNode *node);
 
 
 

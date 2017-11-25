@@ -114,6 +114,16 @@ void taskSched(void)
     if(handle_t != currentTask)
     {
        nextTask = handle_t;
+       handle_t->state = RUN_STATE;
+       if(currentTask->delayTicks > 0)
+       {
+          currentTask->state = DELAY_STATE;
+       }
+       else
+       {
+          currentTask->state = READY_STATE;
+       }
+      
        taskDispatch(); 
     }
 
@@ -124,7 +134,7 @@ void taskSched(void)
 /**
  * @brief  进入临界区
  * @param  none 
- * @retval none
+ * @retval 保存当前状态(退出临界区时使用)
  */
 uint32_t taskEnterCritical(void)
 {
@@ -138,7 +148,7 @@ uint32_t taskEnterCritical(void)
 
 /**
  * @brief  退出临界区
- * @param  none 
+ * @param  status 进入临界区获取的参数 
  * @retval none
  */
 void taskExitCritical(uint32_t status)
@@ -151,8 +161,12 @@ void taskExitCritical(uint32_t status)
 
 /**
  * @brief  创建任务
- * @param  none 
- * @retval none
+ * @param  handler_t  任务句柄
+           fun        任务函数
+           param      输入参数
+           size       堆栈大小(字为单位)
+           prio       任务优先级(0-MAX_PRIORITIES) 数字越小优先级越高
+ * @retval True or False
  */
 uint8_t createTask(taskHandler_t *handler_t,void(*fun)(void*),void *param,uint32_t size,uint8_t prio)
 {
@@ -204,8 +218,13 @@ uint8_t createTask(taskHandler_t *handler_t,void(*fun)(void*),void *param,uint32
 
 /**
  * @brief  创建任务(任务堆栈自行分配)
- * @param  none 
- * @retval none
+ * @param  handler_t  任务句柄
+           fun        任务函数
+           param      输入参数
+           stack      任务堆栈
+           size       堆栈大小(字为单位)
+           prio       任务优先级(0-MAX_PRIORITIES) 数字越小优先级越高
+ * @retval True or False
  */
 uint8_t createStaticTask(taskHandler_t *handler_t,void(*fun)(void*),void *param,uint32_t* stack,uint32_t size,uint8_t prio)
 {
@@ -242,6 +261,77 @@ uint8_t createStaticTask(taskHandler_t *handler_t,void(*fun)(void*),void *param,
 }
 
 
+
+/**
+ * @brief  删除任务
+ * @param  none 
+ * @retval True or False
+ */
+uint8_t removeTask(taskHandler_t *handler_t)
+{
+    
+    //进入临界区
+    uint32_t s = taskEnterCritical();
+    uint8_t flag = False;
+    
+    if(handler_t->state == DELAY_STATE)
+    {
+        //从延时列表中移除
+        removeTaskToDelayList(&(handler_t->node)); 
+ 
+        handler_t->delayTicks = 0;
+    }
+    else if(handler_t->state == SUSPEND_STATE)
+    {
+        removeTaskToSuspendList(&(handler_t->node)); 
+    }
+    else if(handler_t->state == READY_STATE || handler_t->state == RUN_STATE)
+    {
+        //从就绪列表中移除
+        removeTaskToReadyList(&(handler_t->node)); 
+        
+        if(handler_t->state == RUN_STATE)
+            flag = True;
+    }
+
+    
+    if(flag == True)
+    {
+       //启动一次任务调度
+        taskSched(); 
+    }
+    
+    handler_t->state = NONE_STATE;
+    
+      //退出临界区
+    taskExitCritical(s);
+   
+    return True;
+}
+
+
+/**
+ * @brief  获取当前运行任务
+ * @param  none 
+ * @retval 任务句柄
+ */
+taskHandler_t* getCurrentTask(void)
+{
+    return currentTask;
+}
+
+
+/**
+ * @brief  获取任务运行状态
+ * @param  none 
+ * @retval 运行状态
+ */
+TASKSTATE_ENUM getTaskState(taskHandler_t *handler_t)
+{
+    return handler_t->state;
+}
+
+
 /**
  * @brief  延时函数
  * @param  none 
@@ -251,7 +341,7 @@ void taskDelay(uint32_t ticks)
 {
     uint32_t s = taskEnterCritical();
     currentTask->delayTicks = ticks;
-    currentTask->state = SUSPEND_STATE;
+    currentTask->state = DELAY_STATE;
     //从就绪列表中移除
     removeTaskToReadyList(&(currentTask->node));
     //添加至延时列表
@@ -261,6 +351,87 @@ void taskDelay(uint32_t ticks)
     
     taskExitCritical(s);
 }
+
+
+/**
+ * @brief  挂起一个任务
+ * @param  none 
+ * @retval True or False
+ */
+uint8_t taskSuspend(taskHandler_t *handler_t)
+{
+    
+    uint32_t s = taskEnterCritical();
+    
+    if(handler_t->state == SUSPEND_STATE)
+    {
+        taskExitCritical(s);
+        return False;
+    }
+    
+    if(handler_t->state == READY_STATE || handler_t->state == RUN_STATE)
+    {
+        removeTaskToReadyList(&(handler_t->node));
+    }
+    else if(handler_t->state == DELAY_STATE)
+    {
+        removeTaskToDelayList(&(handler_t->node));
+    }
+    
+    //添加至挂起队列
+    addTaskToSuspendList(&(handler_t->node));
+    
+    if(handler_t->state == RUN_STATE)
+    {
+        //进行一次调度
+        taskSched(); 
+    }
+    
+    handler_t->state = SUSPEND_STATE;
+    
+    taskExitCritical(s);
+    
+    return True;
+}
+
+/**
+ * @brief  恢复一个任务
+ * @param  none 
+ * @retval True or False
+ */
+uint8_t taskResume(taskHandler_t *handler_t)
+{
+    uint32_t s = taskEnterCritical();
+    
+    //此任务没有被挂起
+    if(handler_t->state != SUSPEND_STATE)
+    {
+       taskExitCritical(s);
+    
+        return False; 
+    }
+    
+    removeTaskToSuspendList(&(handler_t->node));
+    
+    if(handler_t->delayTicks > 0)
+    {
+        //添加至延时列表
+        addTaskToDelayList(&(handler_t->node)); 
+    }
+    else
+    {
+       //添加至就绪列表
+        addTaskToReadyList(&(handler_t->node));  
+    }
+    
+    //进行一次调度
+    taskSched(); 
+    
+    taskExitCritical(s);
+    
+    return True;
+}
+
 
 
 /**
@@ -287,7 +458,6 @@ void taskSystemTickHandler(void)
         }
 
     }
-
     
     taskExitCritical(s);
     //进行一次调度
@@ -295,7 +465,7 @@ void taskSystemTickHandler(void)
 }
 
 
-extern taskHandler_t tTask1;
+
 /**
  * @brief  开启任务调度
  * @param  none 
@@ -315,6 +485,9 @@ void startTaskSched(void)
     taskRun();
     
 }
+
+
+
 
 
 /**

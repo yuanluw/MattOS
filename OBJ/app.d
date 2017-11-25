@@ -1,0 +1,10 @@
+..\obj\app.o: ..\APP\app.c
+..\obj\app.o: ..\APP\app.h
+..\obj\app.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+..\obj\app.o: ..\os\Mattos.h
+..\obj\app.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+..\obj\app.o: ..\os\list.h
+..\obj\app.o: ..\os\MattOS.h
+..\obj\app.o: ..\os\port.h
+..\obj\app.o: ..\BSP\bsp_Led.h
+..\obj\app.o: ..\BSP\bsp_key.h
